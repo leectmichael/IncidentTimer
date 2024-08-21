@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+
+    <style>
+      body {
+        background-color: black;
+        color: grey;
+        font-family: Arial, sans-serif;
+        font-size: 18px;
+      }
+
+      .stopwatch {
+        margin-bottom: 0px;
+        padding: 5px;
+        border: 2px solid;
+      }
+
+      .bigclock {
+        margin-bottom: 0px;
+        padding: 5px;
+        font-size: 110px;
+		margin-top: -100px;
+      }
+
+      .status {
+        margin-top: -0px;
+        font-size: 60px;
+		}
+      .event {
+        margin-top: -20px;
+        font-size: 60px;
+      }
+      .stopwatchcontrol {
+        margin-bottom: 5px;
+        margin-top: 5px;
+        padding: 0px;
+        border: 0px solid;
+      }
+
+      .description {
+        background-color: black;
+        margin-bottom: -10px;
+        font-size: 60px;
+        color: #003366;
+        border: none;
+	width: 500px;
+	font-weight: bold;
+      }
+
+      .timeP {
+        background-color: black;
+        margin-bottom: 10px;
+        font-size: 10px;
+        width: 30px;
+        color: white;
+        border: none
+      }
+
+
+
+      .hevent {
+        display: none;
+      }
+
+      .completed {
+        border-color: LightGreen !important;
+      }
+
+
+      button2 {
+        font-size: 10px;
+        color: SlateGray;
+        background-color: Silver;
+      }
+
+      .buttonadd {
+        font-size: 20px;
+        font-family: Arial;
+        border-width: 1px;
+        color: #fff;
+        border-color: #1f2f47;
+        border-top-left-radius: 17px;
+        border-top-right-radius: 17px;
+        border-bottom-left-radius: 17px;
+        border-bottom-right-radius: 17px;
+        box-shadow: inset 0px 0px 15px 3px #23395e;
+        text-shadow: inset 0px 1px 0px #263666;
+        background-color: transparent;
+      }
+
+
+      button:hover {
+        background: linear-gradient(#415989, #2e466e);
+      }
+
+      h1 {
+        font-size: 14px;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <h1>RMC Incident Timer
+    <div id="stopwatches"></div>
+
+    <script>
+
+
+
+	const controlWindow = window.open('', '_blank', 'width=800,height=600');
+
+        // Function to open a new window when the page loads
+        window.onload = function() {
+setTimeout(function(){
+    loadstate();
+}, 2000);
+			const styleElement = controlWindow.document.createElement('style');
+			styleElement.textContent = `
+			  .disabled {
+				background-color: Black;
+				color: Black;
+				pointer-events: none;
+				visibility: hidden;
+			  }
+			  button {
+				font-size: 12px;
+				font-family: Arial;
+				border-width: 1px;
+				color: rgba(178, 192, 195, 1);
+				border-color: #1f2f47;
+				border-top-left-radius: 17px;
+				border-top-right-radius: 17px;
+				border-bottom-left-radius: 17px;
+				border-bottom-right-radius: 17px;
+				box-shadow: inset 0px 0px 15px 3px #23395e;
+				text-shadow: inset 0px 1px 0px #263666;
+				background: linear-gradient(#2e466e, #415989);
+			  }
+			`;
+			controlWindow.document.head.appendChild(styleElement);
+            // Add buttons to the new window
+            const AddTimer = controlWindow.document.createElement('button');
+            AddTimer.textContent = 'Add Timer';
+            AddTimer.addEventListener('click', () => {
+                // Add functionality for Button 
+                addStopwatch();
+            });
+            controlWindow.document.body.appendChild(AddTimer);
+			const stopwatchControlsDiv = controlWindow.document.createElement('div');
+			stopwatchControlsDiv.id = 'stopwatchcontrols'; // Set the ID
+			controlWindow.document.body.appendChild(stopwatchControlsDiv);
+        };
+	    let stopwatchCount = 0;
+        const borderColors = ['Gray'];
+      function loadstate() {
+    if (window.localStorage.getItem('pageState')) {
+        if (confirm('Do you want to restore the previous state?')) {
+            restorePageState();
+        } else {
+            clearPageState();
+        }
+    }
+      } 
+
+      function addStopwatch() {
+        stopwatchCount++;
+        const stopwatchControlsDiv = controlWindow.document.createElement('div');
+        stopwatchControlsDiv.className = 'stopwatchcontrol ';
+        stopwatchControlsDiv.id = `stopwatchControls-${stopwatchCount}`;
+        const stopwatchDiv = document.createElement('div');
+        stopwatchDiv.className = 'stopwatch';
+        stopwatchDiv.id = `stopwatch-${stopwatchCount}`;
+        stopwatchDiv.style.borderColor = borderColors[(stopwatchCount - 1) % borderColors.length];
+
+        //<button onclick="stopStopwatch(${stopwatchCount})" id="stop-${stopwatchCount}">Stop</button>
+
+        stopwatchControlsDiv.innerHTML = `<table style="width:100%"><tr><td><div class="event" id="ControlTimerName-${stopwatchCount}">Timer - ${stopwatchCount}</div></td></tr><tr><td style="text-align:left; width: 50%;">
+				
+                <button onclick="startStopwatch(${stopwatchCount})" id="start-${stopwatchCount}" >Start</button>
+				<input type="time" id="clock-${stopwatchCount}" step="0" > </input>
+                <button onclick="DescriptionStopwatchStopwatch(${stopwatchCount})" id="desc-${stopwatchCount}" >Incident Name</button>
+                <button onclick="markEvent(${stopwatchCount})" id="mark-${stopwatchCount}" class="disabled">Update Status</button>
+				<input type="time" id="eclock-${stopwatchCount}" step="0"  class="disabled" > </input>
+                </td> <td style="text-align:right; width: 50%;">
+                <button onclick="completeStopwatch(${stopwatchCount})" id="complete-${stopwatchCount}" class="disabled">Incident Complete</button>
+                <button onclick="copyDetails(${stopwatchCount})" id="copy-${stopwatchCount}" class="disabled">Email Details</button>
+                <button onclick="deleteStopwatch(${stopwatchCount})" id="delete-${stopwatchCount}" >Delete</button><td></tr></table>
+	    `;
+
+        stopwatchDiv.innerHTML = `<table style="width:100%">
+            <tr><td colspan = "1" style="text-align:left; width: 20%;"" >
+            <input type="text" placeholder="" disabled = "true" class="description" id="description-${stopwatchCount}"> 
+            </td>
+            <td style="text-align:left; width: 80%;">
+            <span class="disabled" id="time-${stopwatchCount}"></span>
+            </td>
+            </tr>
+            <tr>
+            <td style="text-align:left; width: 35%;">
+            <div class="event" id="Startevent-${stopwatchCount}"></div>
+            </td> 
+
+            <td style="text-align:right; width: 65%;">
+            <div class="status" id="event-${stopwatchCount}"></div>
+            <div class="hevent" id="hevent-${stopwatchCount}"></div>
+            </td></div></table>
+
+            `;
+        document.getElementById('stopwatches').prepend(stopwatchDiv);
+       // controlWindow.document.getElementById('stopwatchcontrols').insertBefore(stopwatchControlsDiv, controlWindow.document.getElementById('stopwatchcontrols').first);
+ 		controlWindow.document.body.prepend(stopwatchControlsDiv);
+
+		const startSW = controlWindow.document.getElementById('start-'  + stopwatchCount );
+		startSW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                startStopwatch(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+		const descSW = controlWindow.document.getElementById('desc-'  + stopwatchCount );
+		descSW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                DescriptionStopwatch(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+		const markSW = controlWindow.document.getElementById('mark-'  + stopwatchCount );
+		markSW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                markEvent(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+		const completeSW = controlWindow.document.getElementById('complete-'  + stopwatchCount );
+		completeSW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                completeStopwatch(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+		const copySW = controlWindow.document.getElementById('copy-'  + stopwatchCount );
+		copySW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                startEmail(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+		const delSW = controlWindow.document.getElementById('delete-'  + stopwatchCount );
+		delSW.addEventListener('click', () => {
+				const buttonId = event.target.id;
+                deleteStopwatch(buttonId.slice(buttonId.indexOf('-') + 1));
+        });
+      }
+      function continueStopwatch(id) {
+	const stopwatchElement = document.getElementById(`stopwatch-${id}`);
+        const timeElement = document.getElementById(`time-${id}`);
+        const startElement = document.getElementById(`Startevent-${id}`);
+
+// Extract the time part using a regular expression
+const timeMatch = startElement.innerText.match(/(\d{2}:\d{2})/);
+    // Extracted time
+    const time = timeMatch[1];
+    
+    // Create a new Date object for today
+    const start = new Date();
+    
+    // Split the time into hours and minutes
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    // Set the hours and minutes on the Date object
+    start.setHours(hours, minutes, 0, 0);
+
+        timeElement.dataset.intervalId = setInterval(() => {
+          const elapsedTime = Date.now() - start;
+          timeElement.dataset.elapsedTime = elapsedTime;
+
+          //  console.log(elapsedTime);
+          if (elapsedTime > 600000) {
+            stopwatchElement.style.borderColor = '#FFD700';
+
+          }
+          if (elapsedTime > 1200000) {
+            stopwatchElement.style.borderColor = '#CD853F';
+
+          }
+          if (elapsedTime > 1800000) {
+            stopwatchElement.style.borderColor = '#FF0000';
+
+          }
+          timeElement.textContent = formatTime(elapsedTime);
+	  savePageState();
+        }, 1000);
+      }
+      function startStopwatch(id) {
+	    const stopwatchElement = document.getElementById(`stopwatch-${id}`);
+        const timeElement = document.getElementById(`time-${id}`);
+        var startTime = new Date();
+
+        if (controlWindow.document.getElementById(`clock-${id}`).value != "") {
+          var timeMatcher = /(\d\d):(\d\d)/;
+          var result = timeMatcher.exec(document.getElementById(`clock-${id}`).value);
+          var hours = Number(result[1]);
+          var minutes = Number(result[2]);
+          startTime.setHours(hours);
+          startTime.setMinutes(minutes);
+        } else {
+          startTime = Date.now();
+        }
+
+        timeElement.dataset.intervalId = setInterval(() => {
+
+          const elapsedTime = Date.now() - startTime;
+          timeElement.dataset.elapsedTime = elapsedTime;
+          //  console.log(elapsedTime);
+          if (elapsedTime > 600000) {
+            stopwatchElement.style.borderColor = '#FFD700';
+
+          }
+          if (elapsedTime > 1200000) {
+            stopwatchElement.style.borderColor = '#CD853F';
+
+          }
+          if (elapsedTime > 1800000) {
+            stopwatchElement.style.borderColor = '#FF0000';
+
+          }
+          timeElement.textContent = formatTime(elapsedTime);
+	  savePageState();
+        }, 1000);
+        controlWindow.document.getElementById(`start-${id}`).classList.add('disabled');
+
+        const currentTime = new Date(startTime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}); // 24-hour format   
+	//const eventsDiv = document.getElementById(`event-${id}`);
+        const eventDescription = "Started";
+        const heventsDiv = document.getElementById(`hevent-${id}`);
+        const heventDiv = document.createElement('div');
+
+
+        const eventsDiv = document.getElementById(`Startevent-${id}`);
+        const eventDiv = document.createElement('div');
+        eventDiv.innerText = ` ${currentTime} ${eventDescription} `;
+       // console.log(eventDiv);
+        eventsDiv.appendChild(eventDiv);
+        heventDiv.textContent = `${currentTime} - ${eventDescription}`;
+        heventsDiv.appendChild(heventDiv);
+        
+        controlWindow.document.getElementById(`mark-${id}`).classList.remove('disabled');
+        controlWindow.document.getElementById(`complete-${id}`).classList.remove('disabled');
+        controlWindow.document.getElementById(`copy-${id}`).classList.remove('disabled');
+        controlWindow.document.getElementById(`eclock-${id}`).classList.remove('disabled');
+        document.getElementById(`time-${id}`).classList.remove('disabled');
+        document.getElementById(`time-${id}`).classList.add('bigclock');
+        controlWindow.document.getElementById(`clock-${id}`).classList.add('disabled');
+      }
+
+      function stopStopwatch(id) {
+        const timeElement = document.getElementById(`time-${id}`);
+        clearInterval(timeElement.dataset.intervalId);
+      }
+
+      function completeStopwatch(id) {
+        stopStopwatch(id);
+        document.getElementById(`stopwatch-${id}`).classList.add('completed');
+        controlWindow.document.getElementById(`start-${id}`).classList.add('disabled');
+
+        controlWindow.document.getElementById(`mark-${id}`).classList.add('disabled');
+        //     document.getElementById(`stop-${id}`).classList.add('disabled');
+        controlWindow.document.getElementById(`complete-${id}`).classList.add('disabled');
+        controlWindow.document.getElementById(`eclock-${id}`).classList.add('disabled');
+        //     document.getElementById(`description-${id}`).classList.add('disabled');
+        const currentTime = new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});// 24-hour format
+        const eventDescription = "Incident Complete"
+        const eventsDiv = document.getElementById(`event-${id}`);
+        const heventsDiv = document.getElementById(`hevent-${id}`);
+        const eventDiv = document.createElement('div');
+        const heventDiv = document.createElement('div');
+        eventDiv.innerText = `${currentTime}\n${eventDescription}`;
+        heventDiv.textContent = `${currentTime} - ${eventDescription}`;
+        eventsDiv.innerHTML = "";
+        eventsDiv.appendChild(eventDiv);
+        heventsDiv.appendChild(heventDiv);
+      }
+
+      function markEvent(id) {
+        // const currentTime = new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}); // 24-hour format
+        var currentTime = new Date();
+
+        if (controlWindow.document.getElementById(`eclock-${id}`).value != "") {
+          var timeMatcher = /(\d\d):(\d\d)/;
+          var result = timeMatcher.exec(document.getElementById(`eclock-${id}`).value);
+          var hours = Number(result[1]);
+          var minutes = Number(result[2]);
+          currentTime.setHours(hours);
+          currentTime.setMinutes(minutes);
+        } else {
+          currentTime = Date.now();
+        }
+        currentTime = new Date(currentTime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+        const eventDescription = controlWindow.prompt("Enter event description:");
+        if (eventDescription) {
+          const eventsDiv = document.getElementById(`event-${id}`);
+          const heventsDiv = document.getElementById(`hevent-${id}`);
+          const eventDiv = document.createElement('div');
+          const heventDiv = document.createElement('div');
+          eventDiv.innerText = `${currentTime} ${eventDescription}`;
+          heventDiv.textContent = `${currentTime} - ${eventDescription}`;
+          eventsDiv.innerHTML = "";
+          eventsDiv.appendChild(eventDiv);
+          heventsDiv.appendChild(heventDiv);
+        }
+        //   console.log(document.getElementById(`eclock-${id}`).value);
+        controlWindow.document.getElementById(`eclock-${id}`).value = '';
+        //  console.log(document.getElementById(`eclock-${id}`).value);
+      }
+
+
+      function copyDetails(id) {
+        const description = document.getElementById(`description-${id}`).value;
+        const time = document.getElementById(`time-${id}`).textContent;
+        const events = document.getElementById(`hevent-${id}`).children;
+        let eventsText = '';
+        for (let event of events) {
+          eventsText += event.textContent + '\n';
+        }
+        const details = `Description: ${description}\nTime: ${time}\nEvents:\n${eventsText}`;
+		confirm('Click "OK" to copy the list to your clipboard.')
+		setTimeout(c, 0) 
+		async function c() { 
+        await navigator.clipboard.writeText(details); 
+		} 
+        parent.navigator.clipboard.writeText(details).then(() => {
+          alert('Details copied to clipboard!');
+        }).catch(err => {
+          alert('Failed to copy details: ', err);
+        });
+      }
+		function startEmail(id) {
+			const description = document.getElementById(`description-${id}`).value;
+			const time = document.getElementById(`time-${id}`).textContent;
+			const events = document.getElementById(`hevent-${id}`).children;
+			let eventsText = '';
+			for (let event of events) {
+			  eventsText += event.textContent + '\n';
+			}
+			const details = `Description: ${description}\nTime: ${time}\nEvents:\n${eventsText}`;
+             const recipient = ''; // Replace with the recipient's email address
+            const subject = description; // Replace with your desired subject
+            const body = details;
+
+            // Create the mailto link
+            const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+            // Open the user's default email client
+            window.location.href = mailtoLink;
+        }
+
+      function deleteStopwatch(id) {
+        const stopwatchDiv = document.getElementById(`stopwatch-${id}`);
+        stopwatchDiv.remove();
+        const stopwatchControlsDiv = controlWindow.document.getElementById(`stopwatchControls-${id}`);
+        stopwatchControlsDiv.remove();
+      }
+	  function DescriptionStopwatch(id) {
+
+		const eventDescription = controlWindow.prompt("Enter incident description:");
+        if (eventDescription) {
+          const descbox = document.getElementById(`description-${id}`);
+		  const controltimername = controlWindow.document.getElementById(`ControlTimerName-${id}`);
+          controltimername.innerText = `Timer: ${eventDescription}`;
+          controltimername.textContent = `Timer: ${eventDescription}`;
+		  descbox.value = `${eventDescription}`;
+		  controltimername.appendChild(controltimername);
+
+        }
+      }
+
+      function formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+      }
+
+      function ParseTime(timeString) {
+        var timeMatcher = /(\d\d):(\d\d)/;
+        var result = timeMatcher.exec(timeString);
+
+        // The first result (result 0) is the full string,
+        // the second is the number of hours, the third is the number of minutes.
+        var hours = Number(result[1]);
+        var minutes = Number(result[2]);
+
+        // returns the time in number of minutes.
+        return (hours * 60) + minutes;
+      }
+// Function to save the page state
+function savePageState() {
+    const state = {
+        dom: document.documentElement.outerHTML,
+        variables: {}
+    };
+    const state2 = {
+        //dom: controlWindow.document.documentElement.outerHTML.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, ""),
+	dom: controlWindow.document.documentElement.outerHTML,
+        variables: {}
+    };
+
+    // Save other variables (example variables)
+    state.variables.stopwatchCount = stopwatchCount ;
+    //state.variables.exampleVar2 = exampleVar2;
+
+    window.localStorage.setItem('pageState', JSON.stringify(state));
+    window.localStorage.setItem('WindowpageState', JSON.stringify(state2));
+}
+
+function restorePageState() {
+    const state = JSON.parse(localStorage.getItem('pageState'));
+    if (state) {
+        // Restore scroll position
+        window.scrollTo(0, state.scrollPosition);
+
+        // Restore the DOM
+       // document.body.innerHTML = state.innerHTML;
+        // Restore the DOM
+        document.open();
+        document.write(state.dom);
+        document.close();
+        // Restore other variables (example variables)
+        stopwatchCount = state.variables.stopwatchCount ;
+      //  exampleVar2 = state.variables.exampleVar2;
+    }
+    const state2 = JSON.parse(localStorage.getItem('WindowpageState'));
+    if (state2) {
+        // Restore scroll position
+        window.scrollTo(0, state.scrollPosition);
+
+        // Restore the DOM
+        controlWindow.document.open();
+        controlWindow.document.write(state2.dom);
+controlWindow.document.close();
+
+
+        // Restore other variables (example variables)
+     //   exampleVar1 = state.variables.exampleVar1;
+      //  exampleVar2 = state.variables.exampleVar2;
+    }
+   initializeEventListeners();
+}
+function clearPageState() {
+    localStorage.removeItem('pageState');
+    localStorage.removeItem('WindowpageState');
+}
+function initializeEventListeners() {
+    // Add your event listeners or other initialization code here
+	const startSWId = controlWindow.document.querySelectorAll('[id^="start-"]');
+	for (let i = 0; i < startSWId.length; i++) {
+		const element = startSWId[i];
+		const number = element.id.split('start-')[1];
+		const startSW = controlWindow.document.getElementById('start-'  + number );
+		startSW.addEventListener('click', () => {
+                startStopwatch(number );
+        });
+	}
+	const descSWId = controlWindow.document.querySelectorAll('[id^="desc-"]');
+	for (let i = 0; i < descSWId.length; i++) {
+		const element = descSWId[i];
+		const number = element.id.split('desc-')[1];
+		const descSW = controlWindow.document.getElementById('desc-'  + number );
+		descSW.addEventListener('click', () => {
+                DescriptionStopwatch(number);
+        });
+	}
+	const markSWId = controlWindow.document.querySelectorAll('[id^="mark-"]');
+	for (let i = 0; i < markSWId.length; i++) {
+		const element = markSWId[i];
+		const number = element.id.split('mark-')[1];
+		const markSW = controlWindow.document.getElementById('mark-'  + number );
+		markSW.addEventListener('click', () => {
+                markEvent(number);
+        });
+	}
+	const completeSWId = controlWindow.document.querySelectorAll('[id^="complete-"]');
+	for (let i = 0; i < completeSWId.length; i++) {
+		const element = completeSWId[i];
+		const number = element.id.split('complete-')[1];
+		const completeSW = controlWindow.document.getElementById('complete-'  + number );
+		completeSW.addEventListener('click', () => {
+                completeStopwatch(number);
+        });
+	}
+	const copySWId = controlWindow.document.querySelectorAll('[id^="copy-"]');
+	for (let i = 0; i < copySWId.length; i++) {
+		const element = copySWId[i];
+		const number = element.id.split('copy-')[1];
+		const copySW  = controlWindow.document.getElementById('copy-'  + number );
+		copySW.addEventListener('click', () => {
+                startEmail(number);
+        });
+	}
+	const delSWId = controlWindow.document.querySelectorAll('[id^="delete-"]');
+	for (let i = 0; i < delSWId.length; i++) {
+		const element = delSWId[i];
+		const number = element.id.split('delete-')[1];
+		const delSW  = controlWindow.document.getElementById('delete-'  + number );
+		delSW.addEventListener('click', () => {
+                deleteStopwatch(number);
+        });
+	}
+	const descriptionId = document.querySelectorAll('[id^="description-"]');
+	for (let i = 0; i < descriptionId  .length; i++) {
+		const element = descriptionId [i];
+		const number = element.id.split('description-')[1];
+		const descriptionSW  = document.getElementById('description-'  + number );
+		const ControlTimerSW =	controlWindow.document.getElementById('ControlTimerName-'  + number );
+		if (ControlTimerSW.innerText.includes(":")) {
+			const parts = ControlTimerSW.innerText.split(':');
+    			descriptionSW.value =  parts[1].trim(); 
+		}
+	}
+	const eventId = document.querySelectorAll('[id^="event-"]');
+	for (let i = 0; i < eventId .length; i++) {
+		const element = eventId [i];
+		const number = element.id.split('event-')[1];
+		const eventSW  = document.getElementById('event-'  + number );
+		if (!eventSW.innerText.includes("Incident Complete")) {
+    			continueStopwatch(number);
+		}
+	}
+}
+
+        function handleBeforeUnload(event) {
+	    saveLocalStorageToFile();
+            // Optionally, you can provide a message here
+            const message = "Are you sure you want to leave?";
+
+            // Standardize the way the message is shown
+            event.preventDefault(); // Chrome requires this to trigger the dialog
+            event.returnValue = message; // For most browsers
+
+            return message; // For some older browsers
+
+	}
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+    </script>
+  </body>
+
+</html>
